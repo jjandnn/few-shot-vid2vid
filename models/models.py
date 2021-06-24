@@ -1,5 +1,9 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import torch
 import torch.nn as nn
 import numpy as np
@@ -12,9 +16,17 @@ from util.distributed import master_only_print as print
 def create_model(opt, epoch=0):            
     model = Vid2VidModel()
     model.initialize(opt, epoch)
-    print("model [%s] was created" % (model.name()))
+    print("model [%s] was created" % (model.name()))    
     
     if opt.isTrain:        
+        if opt.amp != 'O0':
+            from apex import amp
+            print('using amp optimization')
+            model, optimizers = amp.initialize(model, [model.optimizer_G, model.optimizer_D],
+                                               opt_level=opt.amp, num_losses=2)
+        else:
+            optimizers = model.optimizer_G, model.optimizer_D            
+        
         model = WrapModel(opt, model)
         flowNet = None
         if not opt.no_flow_gt:
@@ -22,13 +34,13 @@ def create_model(opt, epoch=0):
             flowNet = FlowNet()
             flowNet.initialize(opt)
             flowNet = WrapModel(opt, flowNet)
-        return model, flowNet
+        return model, flowNet, optimizers
     return model
 
 def WrapModel(opt, model):
     if opt.distributed:
-        model = model.cuda(opt.gpu_ids[0])
-        model = nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
+        import apex
+        model = apex.parallel.DistributedDataParallel(model.cuda(), delay_allreduce=True)
     else:
         model = MyModel(opt, model)
     return model
@@ -56,12 +68,13 @@ def update_models(opt, epoch, model, data_loader):
 
     ### train single frame first then sequence of frames
     if epoch == opt.niter_single + 1 and not model.module.temporal:
-        model.module.make_temporal_model()
+        model.module.init_temporal_model()
 
     ### gradually grow training sequence length
     epoch_temp = epoch - opt.niter_single
     if epoch_temp > 0 and ((epoch_temp - 1) % opt.niter_step) == 0:
         data_loader.dataset.update_training_batch((epoch_temp - 1) // opt.niter_step)
+
 
 class MyModel(nn.Module):
     def __init__(self, opt, model):        
@@ -69,12 +82,8 @@ class MyModel(nn.Module):
         self.opt = opt
         model = model.cuda(opt.gpu_ids[0])
         self.module = model
-        
-        if opt.distributed:            
-            self.model = nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
-        else:
-            #self.model = nn.DataParallel(model, device_ids=opt.gpu_ids)    
-            self.model = DataParallelWithCallback(model, device_ids=opt.gpu_ids)
+
+        self.model = DataParallelWithCallback(model, device_ids=opt.gpu_ids)
         if opt.batch_for_first_gpu != -1:
             self.bs_per_gpu = (opt.batchSize - opt.batch_for_first_gpu) // (len(opt.gpu_ids) - 1) # batch size for each GPU
         else:

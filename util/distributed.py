@@ -1,14 +1,23 @@
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import os
+import numpy as np
+import random
 import functools
-
 import torch
 import torch.distributed as dist
 
+
 def init_dist(launcher='pytorch', backend='nccl', **kwargs):
+    raise ValueError('Distributed training is not fully tested yet and might be unstable. '
+        'If you are confident to run it, please comment out this line.')
     if dist.is_initialized():
-        return torch.cuda.current_device()
-    # if mp.get_start_method(allow_none=True) is None:
-        # mp.set_start_method('spawn')
+        return torch.cuda.current_device()    
+    set_random_seed(get_rank())
     rank = int(os.environ['RANK'])
     num_gpus = torch.cuda.device_count()
     gpu_id = rank % num_gpus
@@ -87,3 +96,15 @@ def dist_all_gather_tensor(tensor):
     with torch.no_grad():
         dist.all_gather(tensor_list, tensor)
     return tensor_list
+
+
+def set_random_seed(seed):
+    """Set random seeds for everything.
+       Inputs:
+       seed (int): Random seed.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)

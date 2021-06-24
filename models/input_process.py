@@ -1,12 +1,16 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import torch
 
 ############################# input processing ###################################
 def encode_input(opt, data_list, dummy_bs):
     if opt.isTrain and data_list[0].get_device() == 0:
         data_list = remove_dummy_from_tensor(opt, data_list, dummy_bs)
-    tgt_label, tgt_image, flow_gt, conf_gt, ref_label, ref_image, prev_label, prev_image = data_list
+    tgt_label, tgt_image, flow_gt, conf_gt, ref_label, ref_image, prev_label, prev_real_image, prev_fake_image = data_list
 
     # target label and image
     tgt_label = encode_label(opt, tgt_label)
@@ -16,7 +20,7 @@ def encode_input(opt, data_list, dummy_bs):
     ref_label = encode_label(opt, ref_label)        
     ref_image = ref_image.cuda()
         
-    return tgt_label, tgt_image, flow_gt, conf_gt, ref_label, ref_image, prev_label, prev_image
+    return tgt_label, tgt_image, flow_gt, conf_gt, ref_label, ref_image, [prev_label, prev_real_image, prev_fake_image]
 
 def encode_label(opt, label_map):
     size = label_map.size()

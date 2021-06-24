@@ -1,14 +1,19 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import numpy as np
 import os
 import ntpath
 import time
 import glob
 import scipy.misc
-from io import BytesIO
+from io import BytesIO, StringIO
 from util import util
 from util import html
+from util.distributed import is_master
 from util.distributed import master_only_print as print
 
 class Visualizer():
@@ -202,7 +207,7 @@ class Visualizer():
     @staticmethod
     def vis_print(opt, message):
         print(message)
-        if opt.isTrain and not opt.debug:
+        if is_master() and opt.isTrain and not opt.debug:
             log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
             with open(log_name, "a") as log_file:
                 log_file.write('%s\n' % message)

@@ -5,5 +5,4 @@
 # To view a copy of this license, visit
 # https://nvlabs.github.io/few-shot-vid2vid/License.txt
 
-python test.py --name pose --dataset_mode fewshot_pose \
---adaptive_spade --warp_ref --spade_combine --remove_face_labels --finetune
+python test.py --name face_512 --dataset_mode fewshot_face --loadSize 512 --fineSize 512 --adaptive_spade --warp_ref --spade_combine

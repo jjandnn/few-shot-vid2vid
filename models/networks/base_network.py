@@ -1,5 +1,9 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import torch
 import torch.nn as nn
 from torch.nn import init
@@ -21,6 +25,27 @@ def get_grid(batchsize, rows, cols, gpu_id=0):
 
     return t_grid.cuda(gpu_id)
 
+def resample(image, flow):        
+    b, c, h, w = image.size()
+    grid = get_grid(b, h, w, gpu_id=flow.get_device())                
+    flow = torch.cat([flow[:, 0:1, :, :] / ((w - 1.0) / 2.0), flow[:, 1:2, :, :] / ((h - 1.0) / 2.0)], dim=1)        
+    final_grid = (grid + flow).permute(0, 2, 3, 1).cuda(image.get_device())
+    try:
+        output = F.grid_sample(image, final_grid, mode='bilinear', padding_mode='border', align_corners=True)
+    except:
+        output = F.grid_sample(image, final_grid, mode='bilinear', padding_mode='border')
+    return output
+
+### pick the reference image that is most similar to current frame
+def pick_ref(refs, ref_idx):
+    if type(refs) == list:
+        return [pick_ref(r, ref_idx) for r in refs]
+    if ref_idx is None:
+        return refs[:,0]
+    ref_idx = ref_idx.long().view(-1, 1, 1, 1, 1)
+    ref = refs.gather(1, ref_idx.expand_as(refs)[:,0:1])[:,0]        
+    return ref
+
 def concat(a, b, dim=0):
     if isinstance(a, list):
         return [concat(ai, bi, dim) for ai, bi in zip(a, b)]
@@ -36,12 +61,12 @@ def batch_conv(x, weight, bias=None, stride=1, group_size=-1):
     groups = group_size//weight.size()[2] if group_size != -1 else 1    
     if bias is None: bias = [None] * x.size()[0]
     y = None
-    for i in range(x.size()[0]):            
+    for i in range(x.size(0)):
         if stride >= 1:
             yi = F.conv2d(x[i:i+1], weight=weight[i], bias=bias[i], padding=padding, stride=stride, groups=groups)
         else:
             yi = F.conv_transpose2d(x[i:i+1], weight=weight[i], bias=bias[i,:weight.size(2)], padding=padding, stride=int(1/stride),
-                output_padding=padding, groups=groups)
+                output_padding=1, groups=groups)
         y = concat(y, yi)
     return y
 
@@ -97,14 +122,6 @@ class BaseNetwork(nn.Module):
             if k in target_weights and target_weights[k].size() == v.size():                
                 target_weights[k] = v
         net_dst.load_state_dict(target_weights)
-
-    def resample(self, image, flow):        
-        b, c, h, w = image.size()
-        grid = get_grid(b, h, w, gpu_id=flow.get_device())                
-        flow = torch.cat([flow[:, 0:1, :, :] / ((w - 1.0) / 2.0), flow[:, 1:2, :, :] / ((h - 1.0) / 2.0)], dim=1)        
-        final_grid = (grid + flow).permute(0, 2, 3, 1).cuda(image.get_device())
-        output = torch.nn.functional.grid_sample(image, final_grid, mode='bilinear', padding_mode='border')
-        return output
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)

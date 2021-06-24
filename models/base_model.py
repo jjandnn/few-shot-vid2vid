@@ -1,11 +1,16 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 import os
 import copy
 import torch
 from util.visualizer import Visualizer
 import models.networks as networks
 from util.distributed import master_only_print as print
+
 
 class BaseModel(torch.nn.Module):
     def name(self):
@@ -156,7 +161,7 @@ class BaseModel(torch.nn.Module):
                     module = getattr(module, k)
                 params += [module]
                 train_list.add('.'.join(key_list[:1]))
-        print('training layers: ', train_list)
+        Visualizer.vis_print(self.opt, ('training layers: ', train_list))
         return params, train_list
 
     def define_networks(self, start_epoch):
@@ -191,7 +196,7 @@ class BaseModel(torch.nn.Module):
         self.temporal = False
         self.netDT = None             
                     
-        print('---------- Networks initialized -------------')
+        Visualizer.vis_print(self.opt, '---------- Networks initialized -------------')
 
         # initialize optimizers
         if self.isTrain:            
@@ -205,11 +210,11 @@ class BaseModel(torch.nn.Module):
             if self.add_face_D: params += list(self.netDf.parameters())
             self.optimizer_D = self.get_optimizer(params, for_discriminator=True)           
 
-        print('---------- Optimizers initialized -------------')
+        Visualizer.vis_print(self.opt, '---------- Optimizers initialized -------------')
 
         # make model temporal by generating multiple frames
         if (not opt.isTrain or start_epoch > opt.niter_single) and opt.n_frames_G > 1:
-            self.make_temporal_model() 
+            self.init_temporal_model()
 
     def save_networks(self, which_epoch):
         self.save_network(self.netG, 'G', which_epoch, self.gpu_ids)        
@@ -230,9 +235,9 @@ class BaseModel(torch.nn.Module):
                 self.netG.load_pretrained_net(self.netG.flow_network_ref, self.netG.flow_network_temp)
             if self.refine_face:
                 self.load_network(self.netGf, 'Gf', opt.which_epoch, pretrained_path)  
-            if self.isTrain:
+            if (self.isTrain and not opt.load_pretrain) or opt.finetune:
                 self.load_network(self.netD, 'D', opt.which_epoch, pretrained_path)  
-                if self.temporal: 
+                if self.isTrain and self.temporal: 
                     self.load_network(self.netDT, 'DT', opt.which_epoch, pretrained_path)
                 if self.add_face_D: 
                     self.load_network(self.netDf, 'Df', opt.which_epoch, pretrained_path) 
@@ -248,25 +253,18 @@ class BaseModel(torch.nn.Module):
             param_group['lr'] = D_lr
         for param_group in self.optimizer_G.param_groups:
             param_group['lr'] = G_lr
-        print('update learning rate: %f -> %f' % (self.old_lr, new_lr))
+        Visualizer.vis_print(self.opt, 'update learning rate: %f -> %f' % (self.old_lr, new_lr))
         self.old_lr = new_lr
 
-    def make_temporal_model(self):
+    def init_temporal_model(self):
         opt = self.opt
         self.temporal = True
-        self.netG.set_flow_prev()
+        self.netG.init_temporal_network()
         self.netG.cuda()
 
         if opt.isTrain:
-            self.lossCollector.tD = min(opt.n_frames_D, opt.n_frames_G)  
-            if opt.finetune_all:      
-                params = list(self.netG.parameters())
-            else:
-                train_names = ['flow_network_temp']
-                if opt.spade_combine: 
-                    train_names += ['img_warp_embedding', 'mlp_gamma3', 'mlp_beta3']
-                params, _ = self.get_train_params(self.netG, train_names) 
-                    
+            self.lossCollector.tD = min(opt.n_frames_D, opt.n_frames_G)              
+            params = list(self.netG.parameters())            
             if self.refine_face: params += list(self.netGf.parameters())
             self.optimizer_G = self.get_optimizer(params, for_discriminator=False)
             
@@ -278,4 +276,4 @@ class BaseModel(torch.nn.Module):
             if self.add_face_D: params += list(self.netDf.parameters())
             self.optimizer_D = self.get_optimizer(params, for_discriminator=True)           
 
-            print('---------- Now start training multiple frames -------------')
+            Visualizer.vis_print(self.opt, '---------- Now start training multiple frames -------------')

@@ -5,11 +5,23 @@
 # Few-shot vid2vid
 ### [Project](https://nvlabs.github.io/few-shot-vid2vid/) | [YouTube](https://youtu.be/8AZBuyEuDqc) | [arXiv](https://arxiv.org/abs/1910.12713)
 
+<h3><b>[Note] This repo is now deprecated. Please refer to the new Imaginaire repo: https://github.com/NVlabs/imaginaire.</b></h3>
+
 Pytorch implementation for few-shot photorealistic video-to-video translation. It can be used for generating human motions from poses, synthesizing people talking from edge maps, or turning semantic label maps into photo-realistic videos. The core of video-to-video translation is image-to-image translation. Some of our work in that space can be found in [pix2pixHD](https://github.com/NVIDIA/pix2pixHD) and [SPADE](https://github.com/NVlabs/SPADE). <br><br>
 [Few-shot Video-to-Video Synthesis](https://nvlabs.github.io/few-shot-vid2vid/)  
  [Ting-Chun Wang](https://tcwang0509.github.io/), [Ming-Yu Liu](http://mingyuliu.net/), Andrew Tao, [Guilin Liu](https://liuguilin1225.github.io/), [Jan Kautz](http://jankautz.com/), [Bryan Catanzaro](http://catanzaro.name/)  
  NVIDIA Corporation  
  In Neural Information Processing Systems (**NeurIPS**) 2019  
+
+## License
+Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
+
+This work is made available under the Nvidia Source Code License (1-Way Commercial). To view a copy of this license, visit https://nvlabs.github.io/few-shot-vid2vid/License.txt
+
+The code is released for academic research use only. For commercial use, please contact [researchinquiries@nvidia.com](researchinquiries@nvidia.com).
+
+For press and other inquiries, please contact [Hector Marinez](hmarinez@nvidia.com)
+
 
 ## Example Results
 - Dance Videos
@@ -39,25 +51,26 @@ Pytorch implementation for few-shot photorealistic video-to-video translation. I
 
 ## Getting Started
 ### Installation
-- Install python libraries [dominate](https://github.com/Knio/dominate) and requests.
+[**Note**] <b>This repo is now deprecated. Please refer to the new Imaginaire repo: https://github.com/NVlabs/imaginaire.</b>
+
+- <del>Install python libraries [dominate](https://github.com/Knio/dominate) and requests.
 ```bash
 pip install dominate requests
 ```
-- If you plan to train with face datasets, please install dlib.
+- <del>If you plan to train with face datasets, please install dlib.
 ```bash
 pip install dlib
 ```
-- If you plan to train with pose datasets, please install [DensePose](https://github.com/facebookresearch/DensePose) and/or [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose).
-- Clone this repo:
+- <del>If you plan to train with pose datasets, please install [DensePose](https://github.com/facebookresearch/DensePose) and/or [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose).
+- <del>Clone this repo:
 ```bash
 git clone https://github.com/NVlabs/few-shot-vid2vid
 cd few-shot-vid2vid
 ```
 
-
 ### Dataset
 - Pose
-  - We use random dancing videos found on YouTube. We then apply DensePose / OpenPose to estimate the poses for each frame.
+  - We use random dancing videos found on YouTube to crease a YouTube Dancing Dataset. We then apply DensePose / OpenPose to estimate the poses for each frame. The video URLs and code to preprocess them can be found in `data/preprocess`. Please note that the copyright of the dataset belongs to the original owners.
 - Face
   - We use the [FaceForensics](http://niessnerlab.org/projects/roessler2018faceforensics.html) dataset. We then use landmark detection to estimate the face keypoints, and interpolate them to get face edges.
 - Street
@@ -66,9 +79,10 @@ cd few-shot-vid2vid
 - Please add the obtained images to the `datasets` folder in the same way the example images are provided.
 
 ## Training
-- First, compile a snapshot of [FlowNet2](https://github.com/NVIDIA/flownet2-pytorch) by running `python scripts/download_flownet2.py`.
-- Please first download example datasets by running `python scripts/download_datasets.py`.
-- The following scripts are examples of using one GPU. For multi-GPU training, simply increase the batch sizes.
+[**Note**] <b>This repo is now deprecated. Please refer to the new Imaginaire repo: https://github.com/NVlabs/imaginaire.</b>
+- <del>First, compile a snapshot of [FlowNet2](https://github.com/NVIDIA/flownet2-pytorch) by running `python scripts/download_flownet2.py`.
+- <del>Please first download example datasets by running `python scripts/download_datasets.py`.
+- <del>The following scripts are examples of using one GPU. For multi-GPU training, simply increase the batch sizes.
 
 ### Training with pose datasets
 - Example DensePose and OpenPose results are included. If you plan to use your own dataset, please generate these results and put them in the same way the example dataset is provided.

@@ -1,5 +1,9 @@
-### Copyright (C) 2019 NVIDIA Corporation. All rights reserved. 
-### Licensed under the Nvidia Source Code License.
+# Copyright (c) 2019, NVIDIA Corporation. All rights reserved.
+#
+# This work is made available
+# under the Nvidia Source Code License (1-way Commercial).
+# To view a copy of this license, visit
+# https://nvlabs.github.io/few-shot-vid2vid/License.txt
 from .base_options import BaseOptions
 
 class TrainOptions(BaseOptions):
@@ -20,18 +24,15 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--continue_train', action='store_true', help='continue training: load the latest model')
         parser.add_argument('--load_pretrain', type=str, default='', help='load the pretrained model from the specified location')        
         parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')        
-        parser.add_argument('--niter', type=int, default=100, help='# of iter at starting learning rate')
-        parser.add_argument('--niter_decay', type=int, default=0, help='# of iter to linearly decay learning rate to zero')    
+        parser.add_argument('--niter', type=int, default=50, help='# of iter at starting learning rate')
+        parser.add_argument('--niter_decay', type=int, default=50, help='# of iter to linearly decay learning rate to zero')    
         parser.add_argument('--niter_single', type=int, default=50, help='# of iter for single frame training')
-        parser.add_argument('--niter_step', type=int, default=10, help='# of iter to double the length of training sequence')   
-        parser.add_argument('--finetune_all', action='store_true', help='also finetune the single generator when training temporal') 
+        parser.add_argument('--niter_step', type=int, default=10, help='# of iter to double the length of training sequence')           
 
         # for temporal
         parser.add_argument('--n_frames_D', type=int, default=2, help='number of frames to feed into temporal discriminator')
-        parser.add_argument('--n_frames_total', type=int, default=4, help='the overall number of frames in a sequence to train with')        
+        parser.add_argument('--n_frames_total', type=int, default=2, help='the overall number of frames in a sequence to train with')
         parser.add_argument('--max_t_step', type=int, default=4, help='max spacing between neighboring sampled frames. If greater than 1, the network may randomly skip frames during training.')
-        parser.add_argument('--lambda_T', type=float, default=10.0, help='weight for temporal loss')
-        parser.add_argument('--lambda_F', type=float, default=10.0, help='weight for flow loss')        
 
         self.isTrain = True
         return parser
